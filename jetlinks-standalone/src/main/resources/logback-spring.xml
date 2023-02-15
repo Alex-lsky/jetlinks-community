@@ -10,7 +10,7 @@
 
     <appender name="ErrorLOGEventPublisher" class="org.jetlinks.community.logging.logback.SystemLoggingAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>WARN</level>
+            <level>INFO</level>
         </filter>
     </appender>
 
@@ -28,7 +28,7 @@
             <maxHistory>${LOGBACK_ROLLINGPOLICY_MAX_HISTORY:-7}</maxHistory>
         </rollingPolicy>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>WARN</level>
+            <level>INFO</level>
         </filter>
     </appender>
 
@@ -50,7 +50,7 @@
 
     <springProfile name="dev">
 
-        <logger name="system" level="debug">
+        <logger name="system" level="info">
             <appender-ref ref="LOGEventPublisher"/>
         </logger>
 
@@ -61,6 +61,13 @@
     </springProfile>
 
     <springProfile name="test">
+        <root level="INFO">
+            <appender-ref ref="AsyncConsoleAppender"/>
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="qa">
         <root level="INFO">
             <appender-ref ref="AsyncConsoleAppender"/>
             <appender-ref ref="FILE"/>
