@@ -41,7 +41,7 @@ easyorm:
   default-schema: public # 数据库默认的schema
   dialect: postgres #数据库方言
 tdengine:
-  enabled: false
+  enabled: true
   database: jetlinks
   restful:
     endpoints:
