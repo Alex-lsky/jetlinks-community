@@ -9,7 +9,7 @@ spring:
     resources:
       static-locations: file:./static/,/,classpath:/META-INF/resources/,classpath:/resources/,classpath:/static/, classpath:/public/
   redis:
-    host: 127.0.0.1
+    host: 10.0.0.151
     port: 6379
     lettuce:
       pool:
@@ -35,6 +35,8 @@ spring:
     uris: 127.0.0.1:9200
     socket-timeout: 10s
     connection-timeout: 15s
+    password: elastic
+    username: elastic
     webclient:
       max-in-memory-size: 100MB
 easyorm:
