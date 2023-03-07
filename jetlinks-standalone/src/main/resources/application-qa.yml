@@ -35,15 +35,15 @@ spring:
     uris: 127.0.0.1:9200
     socket-timeout: 10s
     connection-timeout: 15s
-    password: elastic
-    username: elastic
+#    password: elastic
+#    username: elastic
     webclient:
       max-in-memory-size: 100MB
 easyorm:
   default-schema: public # 数据库默认的schema
   dialect: postgres #数据库方言
 tdengine:
-  enabled: true
+  enabled: false
   database: jetlinks
   restful:
     endpoints:
