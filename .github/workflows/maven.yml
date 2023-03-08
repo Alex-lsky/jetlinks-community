@@ -17,10 +17,11 @@ jobs:
         username: "${{ secrets.ALIYUN_DOCKER_REPO_USERNAME }}" # 引用GitHub repo设置的镜像容器服务用户名
         password: "${{ secrets.ALIYUN_DOCKER_REPO_PWD }}" # 引用GitHub repo设置的镜像容器服务密码
     - name: Build Maven
+      uses: actions/cache@v2
       run:
         mvn clean package -P qa,!dev -Dmaven.test.skip=true
     - name: Build  Docker Image
-      run: cd ./jetlinks-standalone && docker build -t registry.cn-hangzhou.aliyuncs.com/sky-devops/jetlinks:$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout) -f jetlinks-standalone/Dockerfile  ./jetlinks-standalone/
+      run: ls && cd ./jetlinks-standalone && docker build -t registry.cn-hangzhou.aliyuncs.com/sky-devops/jetlinks:$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout) -f jetlinks-standalone/Dockerfile  ./jetlinks-standalone/
     - name: tag Docker Repo
       run: docker tag registry.cn-hangzhou.aliyuncs.com/sky-devops/jetlinks:$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout) registry.cn-hangzhou.aliyuncs.com/sky-devops/jetlinks:$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
     - name: Push Docker Repo
