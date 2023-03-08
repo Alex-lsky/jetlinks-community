@@ -16,8 +16,16 @@ jobs:
         login-server: registry.cn-hangzhou.aliyuncs.com # 务必正确填写镜像容器服务的登录地址
         username: "${{ secrets.ALIYUN_DOCKER_REPO_USERNAME }}" # 引用GitHub repo设置的镜像容器服务用户名
         password: "${{ secrets.ALIYUN_DOCKER_REPO_PWD }}" # 引用GitHub repo设置的镜像容器服务密码
-    - name: Build Maven
+      #  缓存 Maven 本地仓库
+    - name: Cache Maven packages
       uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Build Maven
       run:
         mvn clean package -P qa,!dev -Dmaven.test.skip=true
     - name: Build  Docker Image
