@@ -1,0 +1,20 @@
+version: '2'
+services:
+  ui:
+    image: registry.cn-hangzhou.aliyuncs.com/sky-devops/jetlinks-ui:2.0.0
+    container_name: jetlinks-ce-ui
+    ports:
+      - 9000:80
+    environment:
+      - "API_BASE_PATH=http://localhost:8844/" #API根路径
+    volumes:
+      - "./data/jetlinks-ui:/usr/share/nginx/html/upload"
+    links:
+      - jetlinks:jetlinks
+  jetlinks:
+    image: registry.cn-hangzhou.aliyuncs.com/sky-devops/jetlinks:2.0.0-SNAPSHOT
+    container_name: jetlinks-ce
+    ports:
+      - "8844:8844" # API端口
+      - "8800-8810:8800-8810" # 预留
+      - "5060-5061:5060-5061" # 预留
