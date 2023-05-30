@@ -7,7 +7,7 @@ services:
     #      - "6379:6379"
     volumes:
       - "/mydata/data/redis:/data"
-    command: redis-server --appendonly no --requirepass "JetLinks@redis"
+    command: redis-server --appendonly yes --requirepass "JetLinks@redis"
     environment:
       - TZ=Asia/Shanghai
   elasticsearch:
@@ -48,8 +48,9 @@ services:
       POSTGRES_PASSWORD: jetlinks
       POSTGRES_DB: jetlinks
       TZ: Asia/Shanghai
+
   ui:
-    image: registry.cn-hangzhou.aliyuncs.com/sky-devops/jetlinks-ui:2.0.0
+    image: registry.cn-hangzhou.aliyuncs.com/sky-devops/jetlinks-ui-vue:2.1.0
     container_name: jetlinks-ce-ui
     ports:
       - 9000:80
@@ -60,23 +61,26 @@ services:
     links:
       - jetlinks:jetlinks
   jetlinks:
-    image: registry.cn-hangzhou.aliyuncs.com/sky-devops/jetlinks:2.0.0-SNAPSHOT
+    image: registry.cn-hangzhou.aliyuncs.com/sky-devops/jetlinks:2.1.0-SNAPSHOT
     container_name: jetlinks-ce
 
     ports:
       - "8844:8844" # API端口
+      - "8848:8848" # API端口
+      - "1883-1890:1883-1890" # 预留
+      - "8800-8810:8800-8810" # 预留
+      - "5060-5061:5060-5061" # 预留
     volumes:
       - "/mydata/jetlinks:/application/static/upload"  # 持久化上传的文件
       - "/mydata/jetlinks/:/application/data/files"
       - "/mydata/jetlinks/:/application/data/protocols"
-      - "/mydata//jetlinks/jetlinksentrypoint.sh:/entrypoint.sh"
+      - "/mydata/entrypoint.sh:/entrypoint.sh"
     #entrypoint: /entrypoint.sh -d redis:5601,postgres:5432,elasticsearch:9200 'echo "start jetlinks service here"';
     environment:
-     # - "SLEEP_SECOND=4"
+      # - "SLEEP_SECOND=4"
       - "JAVA_OPTS=-Duser.language=zh -XX:+UseG1GC"
       - "TZ=Asia/Shanghai"
-      - "hsweb.file.upload.static-location=http://127.0.0.1:8848/upload"  #上传的静态文件访问根地址,为ui的地址.
-      - "server.port=8844" # 端口
+      - "hsweb.file.upload.static-location=http://10.0.0.207:8844/upload"  #上传的静态文件访问根地址,为ui的地址.
       - "spring.r2dbc.url=r2dbc:postgresql://postgres:5432/jetlinks" #数据库连接地址
       - "spring.r2dbc.username=postgres"
       - "spring.r2dbc.password=jetlinks"
