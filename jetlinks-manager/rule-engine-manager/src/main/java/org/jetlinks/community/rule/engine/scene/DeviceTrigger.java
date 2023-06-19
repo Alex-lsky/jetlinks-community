@@ -13,19 +13,20 @@ import org.hswebframework.ezorm.rdb.operator.builder.fragments.SqlFragments;
 import org.hswebframework.web.bean.FastBeanCopier;
 import org.hswebframework.web.i18n.LocaleUtils;
 import org.hswebframework.web.validator.ValidatorUtils;
-import org.jetlinks.core.device.DeviceRegistry;
-import org.jetlinks.core.metadata.DeviceMetadata;
-import org.jetlinks.core.metadata.types.StringType;
-import org.jetlinks.core.utils.Reactors;
 import org.jetlinks.community.TimerSpec;
 import org.jetlinks.community.reactorql.term.TermType;
 import org.jetlinks.community.reactorql.term.TermTypeSupport;
 import org.jetlinks.community.reactorql.term.TermTypes;
 import org.jetlinks.community.rule.engine.executor.DeviceMessageSendTaskExecutorProvider;
+import org.jetlinks.community.rule.engine.executor.device.DeviceSelectorProviders;
 import org.jetlinks.community.rule.engine.executor.device.DeviceSelectorSpec;
 import org.jetlinks.community.rule.engine.executor.device.SelectorValue;
 import org.jetlinks.community.rule.engine.scene.term.TermColumn;
 import org.jetlinks.community.rule.engine.scene.value.TermValue;
+import org.jetlinks.core.device.DeviceRegistry;
+import org.jetlinks.core.metadata.DeviceMetadata;
+import org.jetlinks.core.metadata.types.StringType;
+import org.jetlinks.core.utils.Reactors;
 import org.jetlinks.reactor.ql.DefaultReactorQLContext;
 import org.jetlinks.reactor.ql.ReactorQL;
 import org.jetlinks.reactor.ql.ReactorQLContext;
@@ -470,7 +471,17 @@ public class DeviceTrigger extends DeviceSelectorSpec implements Serializable {
 
         config.setProductId(productId);
         config.setMessage(operation.toMessageTemplate());
-        config.setSelectorSpec(FastBeanCopier.copy(this, new DeviceSelectorSpec()));
+
+        if (DeviceSelectorProviders.isFixed(this)) {
+            config.setSelectorSpec(FastBeanCopier.copy(this, new DeviceSelectorSpec()));
+        } else {
+            config.setSelectorSpec(
+                DeviceSelectorProviders.composite(
+                    //先选择产品下的设备
+                    DeviceSelectorProviders.product(this.productId),
+                    FastBeanCopier.copy(this, new DeviceSelectorSpec())
+                ));
+        }
         config.validate();
 
         deviceNode.setConfiguration(config.toMap());

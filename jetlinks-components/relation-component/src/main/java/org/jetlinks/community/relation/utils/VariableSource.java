@@ -92,7 +92,7 @@ public class VariableSource implements Serializable {
         if (value instanceof Map) {
             Map<?, ?> mapVal = ((Map<?, ?>) value);
             Object sourceName = mapVal.get("source");
-            if (sourceName != null && Source.of(String.valueOf(sourceName)).isPresent()) {
+            if (sourceName != null && VariableSource.Source.of(String.valueOf(sourceName)).isPresent()) {
                 VariableSource source = FastBeanCopier.copy(mapVal, new VariableSource());
                 if (source.getSource() != null) {
                     return source;
@@ -107,41 +107,37 @@ public class VariableSource implements Serializable {
         return this.resolve(context, null);
     }
 
-    public Flux<Object> resolve(Map<String, Object> context,
-                                ConfigKey<?> propertyPath) {
-        validate();
-        if (getSource() == Source.fixed) {
-            return CastUtils.flatStream(Flux.just(value));
+    public static Object resolveValue(String key,
+                                      Map<String, Object> context) {
+        Object value = getNestProperty(key, context);
+        if (value == null) {
+            return null;
         }
-        if (getSource() == Source.upper) {
-            return Mono
-                .justOrEmpty(
-                    DefaultPropertyFeature.GLOBAL.getProperty(getUpperKey(), context)
-                )
-                .flux()
-                .as(CastUtils::flatStream);
-        }
-        if (getSource() == Source.relation) {
-            VariableObjectSpec objectSpec = getRelation();
-            objectSpec.init(context);
-            return RelationManagerHolder
-                .getObjects(objectSpec)
-                .flatMap(obj -> (propertyPath == null)
-                    ? Mono.just(obj.getId())
-                    : obj.properties().get(propertyPath));
-        }
-        return Flux.empty();
-    }
-
-    public Object resolveStatic(Map<String, Object> context) {
-        validate();
-        if (getSource() == Source.fixed) {
-            return value;
-        }
-        if (getSource() == Source.upper) {
-            return  DefaultPropertyFeature.GLOBAL.getProperty(getUpperKey(), context).orElse(null);
+        VariableSource source = of(value);
+        if (source.getSource() == VariableSource.Source.fixed) {
+            value = source.getValue();
+        } else if (source.getSource() == VariableSource.Source.upper) {
+            value = getNestProperty(source.getUpperKey(), context);
+        } else {
+            throw new UnsupportedOperationException("unsupported source type : " + source.getSource());
         }
         return value;
+    }
+
+    public static Map<String, Object> wrap(Map<String, Object> def,Map<String, Object> context) {
+        Map<String, Object> vars = Maps.newLinkedHashMapWithExpectedSize(def.size());
+
+        for (Map.Entry<String, Object> entry : def.entrySet()) {
+            String key = entry.getKey();
+            VariableSource source = VariableSource.of(entry.getValue());
+            if (source.getSource() == VariableSource.Source.upper) {
+                //替换上游值,防止key冲突(source的key和上游的key一样)导致无法获取到真实到上游值
+                vars.put(key, VariableSource.fixed(VariableSource.getNestProperty(source.getUpperKey(), context)));
+            } else {
+                vars.put(key, source);
+            }
+        }
+        return vars;
     }
 
     /**
@@ -172,21 +168,30 @@ public class VariableSource implements Serializable {
 
     }
 
-    public static Object resolveValue(String key,
-                                      Map<String, Object> context) {
-        Object value = getNestProperty(key, context);
-        if (value == null) {
-            return null;
+    public Flux<Object> resolve(Map<String, Object> context,
+                                ConfigKey<?> propertyPath) {
+        validate();
+        if (getSource() == VariableSource.Source.fixed) {
+            return value == null ? Flux.empty() : CastUtils.flatStream(Flux.just(value));
         }
-        VariableSource source = of(value);
-        if (source.getSource() == Source.fixed) {
-            value = source.getValue();
-        } else if (source.getSource() == Source.upper) {
-            value = getNestProperty(source.getUpperKey(), context);
-        } else {
-            throw new UnsupportedOperationException("unsupported source type : " + source.getSource());
+        if (getSource() == VariableSource.Source.upper) {
+            return Mono
+                .justOrEmpty(
+                    DefaultPropertyFeature.GLOBAL.getProperty(getUpperKey(), context)
+                )
+                .flux()
+                .as(CastUtils::flatStream);
         }
-        return value;
+        if (getSource() == VariableSource.Source.relation) {
+            VariableObjectSpec objectSpec = getRelation();
+            objectSpec.init(context);
+            return RelationManagerHolder
+                .getObjects(objectSpec)
+                .flatMap(obj -> (propertyPath == null)
+                    ? Mono.just(obj.getId())
+                    : obj.properties().get(propertyPath));
+        }
+        return Flux.empty();
     }
 
     public static Object getNestProperty(String prop, Map<String, Object> ctx) {
@@ -199,20 +204,15 @@ public class VariableSource implements Serializable {
             .orElse(null);
     }
 
-    public static Map<String, Object> wrap(Map<String, Object> def,Map<String, Object> context) {
-        Map<String, Object> vars = Maps.newLinkedHashMapWithExpectedSize(def.size());
-
-        for (Map.Entry<String, Object> entry : def.entrySet()) {
-            String key = entry.getKey();
-            VariableSource source = VariableSource.of(entry.getValue());
-            if (source.getSource() == Source.upper) {
-                //替换上游值,防止key冲突(source的key和上游的key一样)导致无法获取到真实到上游值
-                vars.put(key, VariableSource.fixed(VariableSource.getNestProperty(source.getUpperKey(), context)));
-            } else {
-                vars.put(key, source);
-            }
+    public Object resolveStatic(Map<String, Object> context) {
+        validate();
+        if (getSource() == VariableSource.Source.fixed) {
+            return value;
         }
-        return vars;
+        if (getSource() == VariableSource.Source.upper) {
+            return  DefaultPropertyFeature.GLOBAL.getProperty(getUpperKey(), context).orElse(null);
+        }
+        return value;
     }
 
     public enum Source {

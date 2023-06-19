@@ -24,16 +24,17 @@ public abstract class JavaScriptFactory extends Jsr223ScriptFactory {
         //注入安全性控制代码
         //✨企业版还支持资源限制(防止死循环等操作)
         wrap.add("function exit(){};" +
-                     "function Function(e){return function(){}};" +
-                     "function quit(){};" +
-                     "function eval(s){};" +
-                     "this.eval = function(e){};" +
-                     "function readFully(){};" +
-                     "function readLine(){};" +
-                     "const console=_$console;" +
-                     "const utils=_$utils;" +
-                     "const print = function(e){console.log(e)};" +
-                     "const echo = print;");
+            "function Function(e){return function(){}};" +
+            "function quit(){};" +
+            "function eval(s){};" +
+            "this.eval = function(e){};" +
+            "function readFully(){};" +
+            "function readLine(){};" +
+            "var console=_$console;" +
+            "var utils=_$utils;" +
+            "var print = function(e){console.log(e)};" +
+            "var echo = print;" +
+            "var JSON = {stringify:function(arg){return utils.toJsonString(arg)},parse:function(arg){return utils.parseJson(arg)}};");
 
         wrap.add("/*  script start */");
 

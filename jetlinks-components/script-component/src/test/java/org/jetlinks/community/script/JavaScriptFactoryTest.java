@@ -1,12 +1,13 @@
 package org.jetlinks.community.script;
 
-import jdk.nashorn.internal.objects.Global;
 import lombok.SneakyThrows;
-import lombok.extern.java.Log;
 import org.jetlinks.community.script.jsr223.JavaScriptFactory;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -227,6 +228,19 @@ public abstract class JavaScriptFactoryTest {
 
         assertNotNull(extend.call);
         assertEquals(2.0, extend.call.get());
+
+    }
+
+    @Test
+    void testJson() {
+        JavaScriptFactory factory = getFactory();
+
+        Object json = factory.compile(Script.of("testJson",
+                "return JSON.parse(JSON.stringify({'a':'1'}))"))
+            .call();
+
+        assertEquals(Collections.singletonMap("a", "1"), json);
+
 
     }
 

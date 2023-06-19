@@ -2,7 +2,6 @@ package org.jetlinks.community.configure.device;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.guava.CaffeinatedGuava;
-import org.hswebframework.web.crud.annotation.EnableEasyormRepository;
 import org.jetlinks.core.ProtocolSupports;
 import org.jetlinks.core.cluster.ClusterManager;
 import org.jetlinks.core.config.ConfigStorageManager;
@@ -13,15 +12,14 @@ import org.jetlinks.core.device.session.DeviceSessionManager;
 import org.jetlinks.core.message.interceptor.DeviceMessageSenderInterceptor;
 import org.jetlinks.core.rpc.RpcManager;
 import org.jetlinks.core.server.MessageHandler;
-import org.jetlinks.supports.cluster.ClusterDeviceOperationBroker;
 import org.jetlinks.supports.cluster.ClusterDeviceRegistry;
 import org.jetlinks.supports.cluster.RpcDeviceOperationBroker;
-import org.jetlinks.supports.scalecube.ExtendedCluster;
 import org.jetlinks.supports.server.ClusterSendToDeviceMessageHandler;
 import org.jetlinks.supports.server.DecodedClientMessageHandler;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -62,6 +60,7 @@ public class DeviceClusterConfiguration {
 
     @Bean(initMethod = "init", destroyMethod = "shutdown")
     @ConditionalOnBean(RpcManager.class)
+    @ConfigurationProperties(prefix = "device.session.persistence")
     public PersistenceDeviceSessionManager deviceSessionManager(RpcManager rpcManager) {
 
         return new PersistenceDeviceSessionManager(rpcManager);

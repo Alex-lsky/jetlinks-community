@@ -94,7 +94,7 @@ services:
       - "spring.redis.password=JetLinks@redis"
       - "logging.level.io.r2dbc=warn"
       - "logging.level.org.springframework.data=warn"
-      - "logging.level.org.springframework=warn"
+      - "log12345ging.level.org.springframework=warn"
       - "logging.level.org.jetlinks=warn"
       - "logging.level.org.hswebframework=warn"
       - "logging.level.org.springframework.data.r2dbc.connectionfactory=warn"

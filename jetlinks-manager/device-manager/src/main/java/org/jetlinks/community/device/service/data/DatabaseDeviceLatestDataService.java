@@ -20,6 +20,15 @@ import org.hswebframework.ezorm.rdb.operator.dml.SelectColumnSupplier;
 import org.hswebframework.ezorm.rdb.operator.dml.query.Selects;
 import org.hswebframework.web.api.crud.entity.QueryParamEntity;
 import org.hswebframework.web.exception.ValidationException;
+import org.jetlinks.community.ConfigMetadataConstants;
+import org.jetlinks.community.buffer.BufferProperties;
+import org.jetlinks.community.buffer.BufferSettings;
+import org.jetlinks.community.buffer.PersistenceBuffer;
+import org.jetlinks.community.device.entity.DeviceLatestData;
+import org.jetlinks.community.gateway.DeviceMessageUtils;
+import org.jetlinks.community.gateway.annotation.Subscribe;
+import org.jetlinks.community.timeseries.query.Aggregation;
+import org.jetlinks.community.timeseries.query.AggregationColumn;
 import org.jetlinks.core.event.Subscription;
 import org.jetlinks.core.message.DeviceMessage;
 import org.jetlinks.core.message.event.EventMessage;
@@ -31,15 +40,6 @@ import org.jetlinks.core.metadata.types.*;
 import org.jetlinks.core.utils.Reactors;
 import org.jetlinks.core.utils.SerializeUtils;
 import org.jetlinks.core.utils.StringBuilderUtils;
-import org.jetlinks.community.ConfigMetadataConstants;
-import org.jetlinks.community.buffer.BufferProperties;
-import org.jetlinks.community.buffer.BufferSettings;
-import org.jetlinks.community.buffer.PersistenceBuffer;
-import org.jetlinks.community.device.entity.DeviceLatestData;
-import org.jetlinks.community.gateway.DeviceMessageUtils;
-import org.jetlinks.community.gateway.annotation.Subscribe;
-import org.jetlinks.community.timeseries.query.Aggregation;
-import org.jetlinks.community.timeseries.query.AggregationColumn;
 import org.jetlinks.reactor.ql.utils.CastUtils;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -128,12 +128,10 @@ public class DatabaseDeviceLatestDataService implements DeviceLatestDataService 
     public void init() {
 
         writer = new PersistenceBuffer<>(
-                BufferSettings.create("./data/buffer", buffer),
-                Buffer::new,
-                this::doWrite)
-            .name("device-latest-data")
-            //最大缓冲10万条数据
-            .settings(setting -> setting.bufferSize(10_0000));
+            BufferSettings.create("./data/buffer", buffer),
+            Buffer::new,
+            this::doWrite)
+            .name("device-latest-data");
 
         writer.start();
 
