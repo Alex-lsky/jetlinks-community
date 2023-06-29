@@ -7,9 +7,10 @@ import lombok.Setter;
 import org.apache.commons.collections4.MapUtils;
 import org.hswebframework.web.bean.FastBeanCopier;
 import org.hswebframework.web.id.IDGenerator;
-import org.hswebframework.web.utils.ExpressionUtils;
-import org.hswebframework.web.utils.TemplateParser;
+import org.jetlinks.community.relation.utils.VariableSource;
 import org.jetlinks.community.rule.engine.executor.device.DeviceSelectorProviders;
+import org.jetlinks.community.rule.engine.executor.device.DeviceSelectorSpec;
+import org.jetlinks.community.utils.ConverterUtils;
 import org.jetlinks.core.device.DeviceOperator;
 import org.jetlinks.core.device.DeviceRegistry;
 import org.jetlinks.core.enums.ErrorCode;
@@ -22,9 +23,6 @@ import org.jetlinks.core.message.function.FunctionInvokeMessage;
 import org.jetlinks.core.message.function.FunctionParameter;
 import org.jetlinks.core.message.property.ReadPropertyMessage;
 import org.jetlinks.core.message.property.WritePropertyMessage;
-import org.jetlinks.community.relation.utils.VariableSource;
-import org.jetlinks.community.rule.engine.executor.device.DeviceSelectorSpec;
-import org.jetlinks.reactor.ql.supports.DefaultPropertyFeature;
 import org.jetlinks.rule.engine.api.RuleData;
 import org.jetlinks.rule.engine.api.RuleDataHelper;
 import org.jetlinks.rule.engine.api.task.ExecutionContext;
@@ -38,15 +36,12 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 
 @AllArgsConstructor
@@ -223,7 +218,10 @@ public class DeviceMessageSendTaskExecutorProvider implements TaskExecutorProvid
         }
 
         private Mono<ReadPropertyMessage> applyMessageExpression(Map<String, Object> ctx, ReadPropertyMessage message) {
-            //读取属性暂时不支持通过变量获取属性
+            List<String> properties = message.getProperties();
+            if (!CollectionUtils.isEmpty(properties)) {
+                message.setProperties(ConverterUtils.convertToList(message.getProperties(), prop -> (String) applyValueExpression(prop, ctx)));
+            }
 
             return Mono.just(message);
         }
@@ -233,7 +231,10 @@ public class DeviceMessageSendTaskExecutorProvider implements TaskExecutorProvid
 
             if (!CollectionUtils.isEmpty(properties)) {
                 message.setProperties(
-                    Maps.transformValues(properties, v -> VariableSource.of(v).resolveStatic(ctx))
+                    Maps.transformValues(properties, v -> {
+                        Object value = applyValueExpression(v, ctx);
+                        return VariableSource.of(value).resolveStatic(ctx);
+                    })
                 );
             }
 
@@ -243,12 +244,21 @@ public class DeviceMessageSendTaskExecutorProvider implements TaskExecutorProvid
         private Mono<FunctionInvokeMessage> applyMessageExpression(Map<String, Object> ctx, FunctionInvokeMessage message) {
             List<FunctionParameter> inputs = message.getInputs();
             if (!CollectionUtils.isEmpty(inputs)) {
-                return Flux.fromIterable(inputs)
-                           .flatMap(param -> VariableSource
-                               .of(param.getValue())
-                               .resolve(ctx)
-                               .doOnNext(param::setValue))
-                           .then(Mono.just(message));
+                for (FunctionParameter input : inputs) {
+                    Object value = input.getValue();
+                    if (value == null) {
+                        continue;
+                    }
+                    if (value instanceof String) {
+                        input.setValue(applyValueExpression(value, ctx));
+                    } else if (value instanceof List) {
+                        input.setValue(ConverterUtils.convertToList(value, (v) -> VariableSource
+                            .of(v)
+                            .resolveStatic(ctx)));
+                    } else {
+                        input.setValue(VariableSource.of(value).resolveStatic(ctx));
+                    }
+                }
             }
 
             return Mono.just(message);
@@ -258,14 +268,7 @@ public class DeviceMessageSendTaskExecutorProvider implements TaskExecutorProvid
             String deviceId = (String) message.get("deviceId");
 
             if (StringUtils.hasText(deviceId)) {
-                if (deviceId.contains("${")) {
-                    return TemplateParser.parse(deviceId, var -> DefaultPropertyFeature
-                        .GLOBAL
-                        .getProperty(var, ctx)
-                        .map(String::valueOf)
-                        .orElse(""));
-                }
-                return deviceId;
+                return String.valueOf(applyValueExpression(deviceId, ctx));
             }
             return null;
         }
@@ -295,6 +298,16 @@ public class DeviceMessageSendTaskExecutorProvider implements TaskExecutorProvid
             if ("fixed".equals(from)) {
                 MessageType.convertMessage(message).orElseThrow(() -> new IllegalArgumentException("不支持的消息格式"));
             }
+        }
+
+        private Object applyValueExpression(Object value,
+                                            Map<String, Object> ctx) {
+            if (value instanceof String) {
+                String stringValue = String.valueOf(value);
+                if (stringValue.startsWith("${") && stringValue.endsWith("}"))
+                    return ctx.get(stringValue.substring(2, stringValue.length() - 1));
+            }
+            return value;
         }
 
     }
