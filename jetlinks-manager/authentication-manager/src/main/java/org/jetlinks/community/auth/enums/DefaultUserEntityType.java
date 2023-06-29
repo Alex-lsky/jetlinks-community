@@ -26,13 +26,6 @@ public enum DefaultUserEntityType implements UserEntityType, EnumDict<String> {
 
     private final String name;
 
-    static Optional<DefaultUserEntityType> of(String id) {
-        return Arrays
-            .stream(values())
-            .filter(type -> type.getId().equals(id))
-            .findAny();
-    }
-
     @Override
     public String getValue() {
         return id;
@@ -41,6 +34,13 @@ public enum DefaultUserEntityType implements UserEntityType, EnumDict<String> {
     @Override
     public String getText() {
         return name;
+    }
+
+    static Optional<DefaultUserEntityType> of(String id) {
+        return Arrays
+            .stream(values())
+            .filter(type -> type.getId().equals(id))
+            .findAny();
     }
 
     @Override

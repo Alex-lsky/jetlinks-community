@@ -43,10 +43,6 @@ public class UserLoginLogicInterceptor {
 
     private final ReactiveRedisOperations<String, String> redis;
 
-    private static String createEncRedisKey(String encryptId) {
-        return "login:encrypt-key:" + encryptId;
-    }
-
     @GetMapping("/authorize/login/configs")
     @Operation(summary = "获取登录所需配置信息")
     public Mono<Map<String, Object>> getConfigs() {
@@ -181,6 +177,11 @@ public class UserLoginLogicInterceptor {
                     }
                 }))
             .then();
+    }
+
+
+    private static String createEncRedisKey(String encryptId) {
+        return "login:encrypt-key:" + encryptId;
     }
 
 }

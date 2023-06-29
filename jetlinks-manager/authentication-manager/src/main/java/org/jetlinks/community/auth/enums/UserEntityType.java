@@ -9,6 +9,10 @@ import org.springframework.util.StringUtils;
  */
 public interface UserEntityType {
 
+    String getId();
+
+    String getName();
+
     static UserEntityType of(String id,
                              String name) {
         if (!StringUtils.hasText(id)) {
@@ -19,9 +23,5 @@ public interface UserEntityType {
             .map(type -> (UserEntityType) type)
             .orElseGet(() -> new UndefinedUserEntityType(id, StringUtils.hasText(name) ? name : id));
     }
-
-    String getId();
-
-    String getName();
 
 }
